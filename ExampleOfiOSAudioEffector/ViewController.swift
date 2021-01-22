@@ -58,14 +58,29 @@ class ViewController: UIViewController {
                 audioEngine = AVAudioEngine()
                 audioFile = try AVAudioFile(forReading: getAudioFileUrl())
                 audioPlayerNode = AVAudioPlayerNode()
-                
                 audioEngine.attach(audioPlayerNode)
-                audioEngine.connect(audioPlayerNode, to: audioEngine.outputNode, format: audioFile.processingFormat)
+                
+                let input = audioEngine.inputNode
+                let output = audioEngine.outputNode
+                let format = input.inputFormat(forBus: 0)
+
+                let reverb = AVAudioUnitReverb()
+                reverb.loadFactoryPreset(.mediumChamber)
+                reverb.wetDryMix = 80
+                
+                audioEngine.attach(reverb)
+                audioEngine.connect(audioPlayerNode, to: reverb, format: audioFile.processingFormat)
+                audioEngine.connect(reverb, to: output, format: audioFile.processingFormat)
+
+
+                //                audioEngine.attach(audioPlayerNode)
+//                audioEngine.connect(audioPlayerNode, to: audioEngine.outputNode, format: audioFile.processingFormat)
             } catch let error {
                 fatalError(error.localizedDescription)
             }
         }
         func doStart() throws {
+
             audioPlayerNode.scheduleFile(audioFile, at: nil, completionCallbackType: .dataPlayedBack) {_ in
                 DispatchQueue.main.async {
                     doStop(true)
@@ -77,7 +92,7 @@ class ViewController: UIViewController {
             playButton.setTitle("Stop", for: .normal)
         }
         func doStop(_ skipPlayerStop: Bool) {
-            if !skipPlayerStop {
+            if !skipPlayerStop && audioPlayerNode != nil {
                 audioPlayerNode.stop()
             }
             playButton.setTitle("Play", for: .normal)
