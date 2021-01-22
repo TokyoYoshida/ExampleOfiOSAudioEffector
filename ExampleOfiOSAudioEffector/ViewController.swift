@@ -65,18 +65,30 @@ class ViewController: UIViewController {
                 fatalError(error.localizedDescription)
             }
         }
+        func doStart() throws {
+            audioPlayerNode.scheduleFile(audioFile, at: nil, completionCallbackType: .dataPlayedBack) {_ in
+                DispatchQueue.main.async {
+                    doStop(true)
+                }
+            }
+
+            try audioEngine.start()
+            audioPlayerNode.play()
+            playButton.setTitle("Stop", for: .normal)
+        }
+        func doStop(_ skipPlayerStop: Bool) {
+            if !skipPlayerStop {
+                audioPlayerNode.stop()
+            }
+            playButton.setTitle("Play", for: .normal)
+        }
         initPlayer()
         do {
-            if !audioPlayerNode.isPlaying {
-                audioPlayerNode.stop()
-                audioPlayerNode.scheduleFile(audioFile, at: nil)
-
-                try audioEngine.start()
-                audioPlayerNode.play()
-                playButton.setTitle("Stop", for: .normal)
+            if playButton.titleLabel?.text == "Play" {
+                doStop(false)
+                try doStart()
             } else {
-                audioPlayerNode.stop()
-                playButton.setTitle("Play", for: .normal)
+                doStop(false)
             }
         } catch let error {
             fatalError(error.localizedDescription)
